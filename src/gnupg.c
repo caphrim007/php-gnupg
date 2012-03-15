@@ -31,6 +31,14 @@ static int le_gnupg;
 static zend_object_handlers gnupg_object_handlers;
 #endif
 
+#if ZEND_MODULE_API_NO >= 20100525
+#define init_properties(intern) object_properties_init(&intern->zo, class_type)
+#else
+#define init_properties(intern) zend_hash_copy(intern->zo.properties, \
+    &class_type->default_properties, (copy_ctor_func_t) zval_add_ref, \
+    (void *) &tmp, sizeof(zval *))
+#endif
+
 /* {{{ defs */
 #ifdef ZEND_ENGINE_2
 
@@ -179,7 +187,8 @@ zend_object_value gnupg_obj_new(zend_class_entry *class_type TSRMLS_DC){
 	
 	ALLOC_HASHTABLE	(intern->zo.properties);
 	zend_hash_init	(intern->zo.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
-	zend_hash_copy	(intern->zo.properties, &class_type->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+
+    init_properties(intern);
 	
 	retval.handle		=	zend_objects_store_put(intern,NULL,(zend_objects_free_object_storage_t) gnupg_obj_dtor,NULL TSRMLS_CC);
 	retval.handlers		=	(zend_object_handlers *) & gnupg_object_handlers;
